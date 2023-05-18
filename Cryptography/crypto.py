@@ -1,4 +1,16 @@
-import random
+import random, sys, os
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 def text_to_binary(text):
     """ Encodes each letter and/or symbol into binary. """
@@ -52,14 +64,14 @@ def XOR(str1, str2):
 def save_to_drive(name, key):
     """ Saves one-time pad key to designated drive. """
 
-    with open(f"F:/Keys/{name}.txt", "w") as f:
+    with open(resource_path(f"F:/Keys/{name}.txt"), "w") as f:
         f.write(key)
 
 
 def retrieve_key_and_password(name, ciphertext):
     """ Retrieves key and decrypts ciphertext into plaintext password. """
 
-    with open(f"F:/Keys/{name}.txt", "r") as f:
+    with open(resource_path(f"F:/Keys/{name}.txt"), "r") as f:
         key = f.readline()
     password_bytes = XOR(key, ciphertext)
     password = binary_to_text(password_bytes)
