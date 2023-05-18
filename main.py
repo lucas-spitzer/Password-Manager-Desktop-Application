@@ -1,17 +1,80 @@
 from customtkinter import *
-from twoFA.setup2FA import verify_2FA_code
+from TwoFA.setup2FA import verify_2FA_code
 from Cryptography.crypto import *
 from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
-import pyperclip, json
+import pyperclip, json, sys, os, time
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 set_appearance_mode("dark")  # Setting application mode to dark.
 set_default_color_theme("green")  # Setting application theme to green.
 
 app = CTk()  # Creating CTk window for application.
-app.title("2FA")  # Adding a title for the application window.
-app.geometry("360x180")  # Sets applications dimensions.
+app.iconbitmap(resource_path("Images/logo.ico"))  # Setting Icon as logo.ico
+app.title("Wake Up, Neo...")  # Adding a title for the application window.
+
+
+app.configure(fg_color = "black")  # Sets application background color to black.
+app.attributes('-fullscreen', True)  # Sets application size to fullscreen.
+
+
+def matrix_animation():
+    """ Animating "Wake up Neo..." introduction to the program. """
+
+    matrix_intro.place(relx=0.15, rely=0.15, anchor=CENTER)
+    matrix_text = matrix_intro.create_text(10, 10, text="", font=("roboto", 20, "normal"), fill="#80ff80", anchor=NW)
+    matrix_sentence = "Wake up, Neo..."
+    small_delta = 200
+    large_delta = 400
+    delay = 0
+    count = 1
+    for i in matrix_sentence:
+        if i != " " and i !=".":
+            delta = small_delta
+        else:
+            delta = large_delta
+        s = matrix_sentence[:count]
+        new_text = lambda s=s: matrix_intro.itemconfigure(matrix_text, text=s)
+        matrix_intro.after(delay, new_text)
+        count += 1
+        delay += delta
+    app.after(4500, lambda: enter_matrix_button.place(relx=0.5, rely=0.55, anchor=CENTER))
+    app.after(4500, lambda: matrix_entry.place(relx=0.5, rely=0.45, anchor=CENTER))
+    
+
+def red_pill():
+    """ Destroys old widgets and places two factor authentication widgets. """
+
+    app.title("2FA")  # Modifying the title for the application window.
+
+    enter_matrix_button.destroy(), matrix_entry.destroy(), matrix_intro.destroy()  # Destroys matrix widgets.
+
+    two_factor_label.place(relx=0.5, rely=0.45, anchor=CENTER)  # Placing Two Factor Label.
+    two_factor_entry.place(relx=0.5, rely=0.5, anchor=CENTER)  # Placing Two Factor Entry Box.
+    submit_button.place(relx=0.5, rely=0.55, anchor=CENTER)  # Placing Submit Button.
+
+
+def matrix_test():
+    """ The user must prove worthy in order to enter the application. """
+
+    matrix_value = matrix_entry.get()  # Grabbing value from entry box and storing as "matrix_value".
+
+    if matrix_value.lower() == "the matrix has you..." or matrix_value.lower() == "thematrixhasyou...":  # If value equals string execute "redpill" function.
+        red_pill()
+    else:  # Else (if string is not equal) destroy the application.
+        app.destroy()
 
 
 def verify_code(code):
@@ -31,7 +94,7 @@ def password_manager():
 
         website = website_entry.get()  # Grabs current website text and stores in 'website' variable.
         try:  # Attempts to open 'data.json' in the Bit-Safe folder and loads file into 'data' dictionary.
-            with open("Bit-Safe/data.json") as data_dict:
+            with open(resource_path("C:\Bit-Safe\data.json")) as data_dict:
                 data = json.load(data_dict)
         except FileNotFoundError:  # If 'FileNotFoundError' occurs error message box appears.
             messagebox.showinfo(title="Error", message="Error: File not found.")
@@ -71,7 +134,7 @@ def password_manager():
         """ Returns a list of websites that have password saved. """
 
         try:  # Attempts to open 'data.json' in the Bit-Safe folder and loads file into 'data' dictionary. 
-            with open("Bit-Safe/data.json") as data_dict:
+            with open(resource_path("C:\Bit-Safe\data.json")) as data_dict:
                 data = json.load(data_dict)
         except FileNotFoundError:  # If 'FileNotFoundError' occurs error message box appears.
             messagebox.showinfo(title="Error", message="Error: File not found.")
@@ -79,6 +142,18 @@ def password_manager():
             websites = list(data.keys())  # Bug occurred when displaying 'websites' in message box, so reformatting was necessary.
             formatted_websites = '{}'.format(websites)
             messagebox.showinfo(title="List of Websites", message=formatted_websites)
+
+
+    def show():
+        """ Show Password Entry in Plaintext. """
+
+        password_entry.configure(show="")
+
+
+    def disguise():
+        """ Disguise Password Entry as '*'. """
+
+        password_entry.configure(show="*")
 
 
     def save():
@@ -102,14 +177,14 @@ def password_manager():
             messagebox.showinfo(title="Oops", message="Error: One or more field(s) are empty.")
         else:
             try:  # Attempts to open and read 'data.json' file, storing in 'data' dictionary.
-                with open("Bit-Safe/data.json", "r") as file:
+                with open(resource_path("C:\Bit-Safe\data.json"), "r") as file:
                     data = json.load(file)
             except FileNotFoundError:  # If 'FileNotFoundError' error occurs, 'Bit-Safe/data.json' is created.
-                with open("Bit-Safe/data.json", "w") as file:
+                with open(resource_path("C:\Bit-Safe\data.json"), "w") as file:
                     json.dump(new_data, file, indent=4)
             else:
                 data.update(new_data)  # Updates 'data' with 'new_data' adding additional credentials in the process.
-                with open("Bit-Safe/data.json", "w") as file:
+                with open(resource_path("C:\Bit-Safe\data.json"), "w") as file:
                     json.dump(data, file, indent=4)
             finally:  # Lastly, delete old 'website' and 'password' entry data.
                 website_entry.delete(0, END)
@@ -117,70 +192,88 @@ def password_manager():
 
 
     # Reformats app's window size, destroys old widgets, changes the window title, and adds padding around all widgets.
-    app.geometry("600x800")
     two_factor_entry.destroy(), two_factor_label.destroy(), submit_button.destroy()
     app.title("Password Manager")
-    app.config(padx=50, pady=50)
+    app.configure(fg_color=["gray92", "gray14"])
 
     # Loads image and places the logo at the top center of the screen.
-    logo = PhotoImage(file="Bit-Safe/logo.png")
+    logo = PhotoImage(file=resource_path("Images/logo.png"))
     logo_img = CTkLabel(app, image=logo, text="")
-    logo_img.grid(row=0, column=0, columnspan=2)
+    logo_img.place(relx=0.5, rely=0.25, anchor=CENTER)
 
     # Creating and placing website label.
-    website_label = CTkLabel(app, text="Website:")
-    website_label.grid(row=1, column=0, padx=5, pady=5)
+    website_label = CTkLabel(app, text="Website:", font=("Helvetica", 36, "bold"))
+    website_label.place(relx=0.35, rely=0.6, anchor=CENTER)
 
     # Creating and placing website entry field.
-    website_entry = CTkEntry(app, width=175, placeholder_text="Enter Website or Application Name")
-    website_entry.grid(row=1, column=1, padx=5, pady=5)
+    website_entry = CTkEntry(app, width=200, height=50, placeholder_text="Enter Website or Application Name")
+    website_entry.place(relx=0.5, rely=0.6, anchor=CENTER)
     website_entry.focus()
 
     # Creating and placing search button. Button checks website field, if field corresponds to data file the username/email and password appear.
-    search_button = CTkButton(app, text="Search", command=search)
-    search_button.grid(row=4, column=0, padx=5, pady=5)
+    search_button = CTkButton(app, text="Search", height=50, command=search, font=("Helvetica", 24, "normal"))
+    search_button.place(relx=0.65, rely=0.6, anchor=CENTER)
 
     # Creating and placing email/username label.
-    email_username_label = CTkLabel(app, text="Email/Username:")
-    email_username_label.grid(row=2, column=0, padx=5, pady=5)
+    email_username_label = CTkLabel(app, text="Email/Username:", font=("Helvetica", 36, "bold"))
+    email_username_label.place(relx=0.35, rely=0.7, anchor=CENTER)
 
     # Creating and placing email/username entry field.
-    email_username_entry = CTkEntry(app, width=175, placeholder_text="Enter Email or Username")
-    email_username_entry.grid(row=2, column=1, padx=5, pady=5)
+    email_username_entry = CTkEntry(app, width=200, height=50, placeholder_text="Enter Email or Username")
+    email_username_entry.place(relx=0.5, rely=0.7, anchor=CENTER)
     email_username_entry.insert(0, "spitzerlucas25@gmail.com")
 
     # Creating and placing password label.
-    password_label = CTkLabel(app, text="Password:")
-    password_label.grid(row=3, column=0, padx=5, pady=5)
+    password_label = CTkLabel(app, text="Password:", font=("Helvetica", 36, "bold"))
+    password_label.place(relx=0.35, rely=0.8, anchor=CENTER)
 
     # Creating and placing password entry field.
-    password_entry = CTkEntry(app, width=175, placeholder_text="Enter or Generate Password")
-    password_entry.grid(row=3, column=1, padx=5, pady=5)
+    password_entry = CTkEntry(app, width=200, height=50, show="*", placeholder_text="Enter or Generate Password")
+    password_entry.place(relx=0.5, rely=0.8, anchor=CENTER)
 
     # Creating and placing generate button. Button generates a random password of letters, numbers, and symbols.
-    generate_button = CTkButton(app, text="Generate Password", command=generate_password)
-    generate_button.grid(row=4, column=1, padx=5, pady=5)
+    generate_button = CTkButton(app, text="Generate Password", height=50, width=250, command=generate_password, font=("Helvetica", 24, "normal"))
+    generate_button.place(relx=0.65, rely=0.8, anchor=CENTER)
 
     # Creating and placing list button. Button lists the websites which have data stored in the Bit-Safe.
-    list_button = CTkButton(app, text="List Websites", command=list_websites)
-    list_button.grid(row=5, column=0, padx=5, pady=15)
+    list_button = CTkButton(app, text="List Websites", height=50, width=175, command=list_websites, font=("Helvetica", 24, "normal"))
+    list_button.place(relx=0.65, rely=0.7, anchor=CENTER)
 
     # Creating and placing add button. Button saves credentials active in the app to the Bit-Safe.
-    add_button = CTkButton(app, text="Add Credentials", command=save)
-    add_button.grid(row=5, column=1, padx=5, pady=15)
+    add_button = CTkButton(app, text="Add Credentials", command=save, font=("Helvetica", 24, "normal"), width=200, height=50)
+    add_button.place(relx=0.5, rely=0.9, anchor=CENTER)
 
+    # Creating and placing show button. 
+    show_button = CTkButton(app, text="Display PW", command=show, font=("Helvetica", 24, "normal"), width=200, height=50)
+    show_button.place(relx=0.65, rely=0.9, anchor=CENTER)
 
-# Creating label and placing label in the center.
+    # Creating and placing disguise button.
+    disguise_button = CTkButton(app, text="Disguise PW", command=disguise, font=("Helvetica", 24, "normal"), width=200, height=50)
+    disguise_button.place(relx=0.35, rely=0.9, anchor=CENTER)
+
+    # Creating and placing close button.
+    close_button = CTkButton(app, text="X", height=50, width=50, command=app.destroy, font=("Helvetica", 24, "normal"), fg_color="red", hover_color="#a52a2a")
+    close_button.place(relx=0.985, rely=0.025, anchor=CENTER)
+
+# Creating matrix intro canvas with a global scope.
+matrix_intro = CTkCanvas(app, bg="black", highlightbackground="black")
+
+# Creating matrix button with a global scope.
+enter_matrix_button = CTkButton(app, width=150, text="Next Move?", fg_color="#80ff80", text_color="black", command=matrix_test)
+
+# Creating matrix value and entry box with a global scope.
+matrix_value = StringVar(app, value="")
+matrix_entry = CTkEntry(app, border_color="#80ff80", show="*", fg_color="black", text_color="#80ff80", width=200, height=35, textvariable=matrix_value, font=("Roboto", 20, "normal"))
+
+# Creating label widget.
 two_factor_label = CTkLabel(app, font=("Roboto", 24, "normal"), text="Enter Code:")
-two_factor_label.place(relx=0.5, rely=0.25, anchor=CENTER)
 
-# Creating variable and entry placing entry in the center.
+# Creating variable and entry widget.
 code = StringVar(app, value="")
-two_factor_entry = CTkEntry(app, width=80, height=35, textvariable=code, font=("Roboto", 20, "normal"))
-two_factor_entry.place(relx=0.5, rely=0.5, anchor=CENTER)
+two_factor_entry = CTkEntry(app, width=80, height=35, show="*", textvariable=code, font=("Roboto", 20, "normal"))
 
 # Submit button used to call "verify_code()" after entering verification code.
 submit_button = CTkButton(app, width=100, text="Submit", command=lambda: verify_code(code=code.get()))
-submit_button.place(relx=0.5, rely=0.75, anchor=CENTER)
 
+app.after(500, matrix_animation)
 app.mainloop()  # Mainloop keeping window persistent until "app.destroy()" is called.
